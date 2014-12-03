@@ -99,6 +99,14 @@ class myEduroam():
                 self.write_eduroam_config(lines)
                 break
 
+    def status_cell(self):
+        lines = self.read_eduroam_config()
+        for x in range(len(lines)):
+            if "bssid=" in lines[x]:
+                mac = lines[x].split('=')[1]
+                return mac
+        return None
+
 
     def read_eduroam_config(self):
         fd = open(self.path, 'r')
@@ -147,8 +155,9 @@ class myEduroam():
 def print_usage():
 
     print "\nUsage:"
-    print "\t sudo python2 "+str(sys.argv[0])+ " set   -Forces 5Ghz"
-    print "\t sudo python2 "+str(sys.argv[0])+ " unset -Returns to Auto"
+    print "\t sudo python2 "+str(sys.argv[0])+ " set    -Forces 5Ghz"
+    print "\t sudo python2 "+str(sys.argv[0])+ " unset  -Returns to Auto"
+    print "\t sudo python2 "+str(sys.argv[0])+ " status -Set or Not?"
     exit(0)
 
 
@@ -186,5 +195,13 @@ if __name__ == "__main__":
         #my.restart_NM()
         my.force_connect()
 
+
+    elif sys.argv[1] == 'status':
+        mac = my.status_cell()
+        if mac:
+            print "\t Set to "+str(mac)
+        else:
+            print "\t Is in Auto"
+
     else:
-    print_usage()
+        print_usage()
