@@ -41,15 +41,28 @@ class myEduroam():
 
         stations = dict()
         for x in range(len(lines)):
+            last_mac = None
+
             if "Address:" in lines[x]:
                 mac = lines[x].split()[4]
+                last_mac = mac
                 stations[mac] = {
                     'mac' : mac,
                     'channel' : int(lines[x+1].split(':')[1]),
                     'freq' : float(lines[x+2].split()[0].split(':')[1]),
-                    'signal' : 120+int(lines[x+3].split()[2].split('=')[1])
+                    'signal' : 120+int(lines[x+3].split()[2].split('=')[1]),
+                    'essid' : lines[x+5].split(':')[1].split('"')[1]
                 }
-        self.stations = stations
+
+            if "Last beacon" in lines[x]:
+                stations[mac]['age'] = lines[x].split()[3]
+
+        eduroam = dict()
+        for x, y in stations.items():
+            if y['essid'] == "eduroam":
+                eduroam[x] = y
+
+        self.stations = eduroam
         return stations
 
     def show_5ghz(self):
@@ -133,7 +146,9 @@ class myEduroam():
 
     def restart_NM(self):
         self.kill_NM()
+        sleep(7)
         self.start_NM()
+        sleep(4)
 
     def force_connect(self):
         p = subprocess.Popen('runuser -l '+self.username+' -c "'+\
@@ -158,6 +173,8 @@ def print_usage():
     print "\t sudo python2 "+str(sys.argv[0])+ " set    -Forces 5Ghz"
     print "\t sudo python2 "+str(sys.argv[0])+ " unset  -Returns to Auto"
     print "\t sudo python2 "+str(sys.argv[0])+ " status -Set or Not?"
+    print "\t sudo python2 "+str(sys.argv[0])+ " air    -Shows Stations Around"
+    print "\t sudo python2 "+str(sys.argv[0])+ " list   -Shows Eduroms around"
     exit(0)
 
 
@@ -182,8 +199,7 @@ if __name__ == "__main__":
         if my.pick_best():
             my.set_cell()
             my.force_disconnect()
-            sleep(1)
-            #my.restart_NM()
+            my.restart_NM()
             my.force_connect()
         else:
             "No 5Ghz Cells Around"
@@ -191,8 +207,7 @@ if __name__ == "__main__":
     elif sys.argv[1] == 'unset':
         my.unset_cell()
         my.force_disconnect()
-        #sleep(1)
-        #my.restart_NM()
+        my.restart_NM()
         my.force_connect()
 
 
@@ -202,6 +217,16 @@ if __name__ == "__main__":
             print "\t Set to "+str(mac)
         else:
             print "\t Is in Auto"
+
+    elif sys.argv[1] == 'air':
+        the_list = my.scan_air()
+        for mac, val in the_list.items():
+            print val
+
+    elif sys.argv[1] == 'list':
+        my.scan_air()
+        for mac, val in my.stations.items():
+            print val
 
     else:
         print_usage()
